@@ -65,7 +65,6 @@ const client = await new Client().connect({
   password: args.password,
 })
 
-const clear = args.clear
 const padding = 40
 const formatter = Intl.DateTimeFormat('sv-SE', {dateStyle: 'short', timeStyle: 'medium'})
 const ruler = '-'.repeat(padding + 5)
@@ -78,7 +77,7 @@ while(true) {
     console.error(err.message)
     Deno.exit(0)
   }
-  if (clear) {
+  if (args.cls) {
     console.clear()
   }
   console.log(ruler)
