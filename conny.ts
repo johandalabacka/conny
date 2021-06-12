@@ -19,36 +19,61 @@ function sleep(ms : number) : Promise<void> {
  */
 function usage() {
   console.log(`Usage: conny [flags]
-  -c, --clear         Clear screen before each showing
+  -c, --cls           Clear screen before each showing
   -h, --host=name     Connect to host (default 127.0.0.1)
+  -u, --user=name     User to connect as (default root)
   -p, --password=name Password to use (default empty)
   -P, --port=#        Port number to use (default 3306)
-  -e=name             Pattern to match status variables (default %conn%)
+  -e, --pattern       Pattern to match status variables (default %conn%)
 `)
 }
 
-const args = parse(Deno.args)
+const args = parse(Deno.args, {
+  alias: {
+    cls: 'c',
+    host: 'h',
+    user: 'u',
+    password: 'p',
+    port: 'P',
+    pattern: 'e'
+  },
+  boolean: ['cls', 'help'],
+  string: ['host', 'user', 'password', 'port', 'pattern'],
+  default: {
+    host: '127.0.0.1',
+    user: 'root',
+    password: '',
+    port: '3306',
+    pattern: '%conn%'
+  },
+  unknown: (option) => {
+    console.error('Unknown option', option)
+    usage()
+    Deno.exit(1)
+  }
+})
+
 if (args.help) {
   usage()
   Deno.exit(2)
 }
 
 const client = await new Client().connect({
-  hostname: args.host ?? args.h ?? '127.0.0.1',
-  port: parseInt(args.port ?? args.P ?? '3306'),
-  username: args.user ?? args.u ?? 'root',
-  password: args.password ?? args.p ?? '',
+  hostname: args.host,
+  port: parseInt(args.port),
+  username: args.user,
+  password: args.password,
 })
 
-const clear = args.clear ?? args.c
+const clear = args.clear
 const padding = 40
 const formatter = Intl.DateTimeFormat('sv-SE', {dateStyle: 'short', timeStyle: 'medium'})
 const ruler = '-'.repeat(padding + 5)
+
 while(true) {
-  
   let result
   try {
-    result = await client.execute(`SHOW STATUS LIKE ?`, [args.e ?? '%conn%'])
+    result = await client.execute(`SHOW STATUS LIKE ?`, [args.pattern])
   } catch (err) {
     console.error(err.message)
     Deno.exit(0)
@@ -57,10 +82,10 @@ while(true) {
     console.clear()
   }
   console.log(ruler)
-  console.log(formatter.format(new Date()))
+  console.log(`${formatter.format(new Date())} - matching "${args.pattern}"`)
   console.log(ruler)
   for (const { Variable_name, Value } of result.rows ?? []) {
-    console.log(Variable_name.padEnd(40, '.'), '=', Value)
+    console.log(Variable_name.padEnd(40, '.'), Value ?? '<empty>')
   }
   await sleep(1000)
 }
