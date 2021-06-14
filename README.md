@@ -17,3 +17,5 @@ Usage: conny [flags]
   -P, --port=#        Port number to use (default 3306)
   -e, --pattern=name  Pattern to match status variables (default %conn%)
 ```
+
+![Running](running.gif)
